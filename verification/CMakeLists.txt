@@ -9,21 +9,24 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
 # Add include directories
-include_directories(${JSONCPP_INCLUDE_DIRS})
+include_directories(
+    ${JSONCPP_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # Add source files
 set(SOURCES
-    main.cpp
-    MCPValidator.cpp
-    MCPClientValidator.cpp
-    MCPServerValidator.cpp
+    test/main.cpp
+    src/MCPValidator.cpp
+    src/MCPClientValidator.cpp
+    src/MCPServerValidator.cpp
 )
 
 # Add header files
 set(HEADERS
-    MCPValidator.h
-    MCPClientValidator.h
-    MCPServerValidator.h
+    include/MCPValidator.h
+    include/MCPClientValidator.h
+    include/MCPServerValidator.h
 )
 
 # Add executable
