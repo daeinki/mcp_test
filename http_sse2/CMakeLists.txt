@@ -38,3 +38,6 @@ target_link_libraries(client mcp-transport)
 add_executable(main src/mcp_sse_server.cpp)
 target_link_libraries(main pthread)
 
+add_executable(main1 src/mcp_server_gpt.cpp)
+target_link_libraries(main1 pthread ${JSONCPP_LIBRARIES} )
+
