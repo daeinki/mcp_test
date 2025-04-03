@@ -34,3 +34,7 @@ target_link_libraries(server mcp-transport)
 add_executable(client src/main_client.cpp)
 target_link_libraries(client mcp-transport)
 
+
+add_executable(main src/mcp_sse_server.cpp)
+target_link_libraries(main pthread)
+
