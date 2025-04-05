@@ -41,6 +41,10 @@ target_link_libraries(mcp_sse_server pthread)
 add_executable(mcp_server_gpt src/mcp_server_gpt.cpp)
 target_link_libraries(mcp_server_gpt pthread ${JSONCPP_LIBRARIES} )
 
-add_executable(mcp_sse_ok src/mcp_sse_ok.cpp)
-target_link_libraries(mcp_sse_ok pthread ${JSONCPP_LIBRARIES} )
+add_executable(mcp_sse_ok src/mcd_sse_ok4.cpp)
+target_link_libraries(mcp_sse_ok pthread ${JSONCPP_LIBRARIES} uuid)
+
+
+add_executable(mcp_server src/mcp_server.cpp)
+target_link_libraries(mcp_server pthread ${JSONCPP_LIBRARIES} uuid)
 
