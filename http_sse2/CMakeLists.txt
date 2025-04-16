@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(MCPTransport)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(CURL REQUIRED)
@@ -48,3 +48,5 @@ target_link_libraries(mcp_sse_ok pthread ${JSONCPP_LIBRARIES} uuid)
 add_executable(mcp_server src/mcp_server.cpp)
 target_link_libraries(mcp_server pthread ${JSONCPP_LIBRARIES} uuid)
 
+add_executable(mcp_server_new src/mcp_server_new.cpp)
+target_link_libraries(mcp_server_new pthread ${JSONCPP_LIBRARIES} uuid)
