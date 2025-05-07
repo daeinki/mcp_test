@@ -675,8 +675,28 @@ private:
     MCPHandler mcp_handler;
 };
 
-int main() {
-    MCPServer server(ServerConfig::DEFAULT_PORT);
+int main(int argc, char* argv[]) {
+    int port = ServerConfig::DEFAULT_PORT;
+
+    // 명령줄 인자에서 포트 번호 파싱
+    if (argc > 1) {
+        try {
+            port = std::stoi(argv[1]);
+            if (port <= 0 || port > 65535) {
+                LOG_ERROR("Invalid port number. Using default port: " << ServerConfig::DEFAULT_PORT);
+                port = ServerConfig::DEFAULT_PORT;
+            } else {
+                LOG_INFO("Using port: " << port);
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("Invalid port number format. Using default port: " << ServerConfig::DEFAULT_PORT);
+            port = ServerConfig::DEFAULT_PORT;
+        }
+    } else {
+        LOG_INFO("No port specified. Using default port: " << ServerConfig::DEFAULT_PORT);
+    }
+
+    MCPServer server(port);   
     
     try {
         server.start();
