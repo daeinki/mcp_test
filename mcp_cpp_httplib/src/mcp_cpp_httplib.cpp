@@ -319,22 +319,78 @@ private:
     }
 };
 
+// 요청과 응답을 위한 추상 인터페이스 정의
+class IRequest {
+public:
+    virtual ~IRequest() = default;
+    virtual bool hasParam(const std::string& name) const = 0;
+    virtual std::string getParamValue(const std::string& name) const = 0;
+    virtual std::string getBody() const = 0;
+    virtual std::string getRemoteAddr() const = 0;
+};
+
+class IResponse {
+public:
+    virtual ~IResponse() = default;
+    virtual void setStatus(int status_code) = 0;
+    virtual void setContent(const std::string& content, const std::string& content_type) = 0;
+};
+
+// cpp-httplib 어댑터 구현
+class HttplibRequestAdapter : public IRequest {
+private:
+    const httplib::Request& req;
+public:
+    explicit HttplibRequestAdapter(const httplib::Request& request) : req(request) {}
+    
+    bool hasParam(const std::string& name) const override {
+        return req.has_param(name);
+    }
+    
+    std::string getParamValue(const std::string& name) const override {
+        return req.get_param_value(name);
+    }
+    
+    std::string getBody() const override {
+        return req.body;
+    }
+    
+    std::string getRemoteAddr() const override {
+        return req.remote_addr;
+    }
+};
+
+class HttplibResponseAdapter : public IResponse {
+private:
+    httplib::Response& res;
+public:
+    explicit HttplibResponseAdapter(httplib::Response& response) : res(response) {}
+    
+    void setStatus(int status_code) override {
+        res.status = status_code;
+    }
+    
+    void setContent(const std::string& content, const std::string& content_type) override {
+        res.set_content(content, content_type);
+    }
+};
+
 // MCP 핸들러 클래스
 class MCPHandler {
 public:
     MCPHandler(SessionManager& sessionManager) : session_manager(sessionManager), tool_handler() {}
 
-    void handleRequest(const httplib::Request& req, httplib::Response& res) {
+    void handleRequest(const IRequest& req, IResponse& res) {
         std::string sessionId;
-        if (req.has_param("sessionId")) {
-            sessionId = req.get_param_value("sessionId");
+        if (req.hasParam("sessionId")) {
+            sessionId = req.getParamValue("sessionId");
         } else {
-            LOG_ERROR("Missing sessionId parameter in /message request from " << req.remote_addr);
+            LOG_ERROR("Missing sessionId parameter in /message request from " << req.getRemoteAddr());
             sendErrorResponse(res, 400, "Missing sessionId parameter");
             return;
         }
 
-        LOG_INFO("Received /message POST for sessionId: " << sessionId << " from " << req.remote_addr);
+        LOG_INFO("Received /message POST for sessionId: " << sessionId << " from " << req.getRemoteAddr());
 
         auto session = session_manager.getSession(sessionId);
         if (!session) {
@@ -345,7 +401,7 @@ public:
         session->updateLastActivity();
 
         Json::Value rpc;
-        if (!parseAndValidateJsonRpc(req.body, rpc)) {
+        if (!parseAndValidateJsonRpc(req.getBody(), rpc)) {
             sendErrorResponse(res, 400, "Parse error", -32700);
             return;
         }
@@ -381,7 +437,7 @@ private:
         return true;
     }
 
-    void sendErrorResponse(httplib::Response& res, int status, const std::string& message, int code = 0) {
+    void sendErrorResponse(IResponse& res, int status, const std::string& message, int code = 0) {
         Json::Value error;
         error["error"] = message;
         if (code != 0) {
@@ -392,17 +448,17 @@ private:
             error["error"]["code"] = code;
             error["error"]["message"] = message;
         }
-        res.status = status;
-        res.set_content(JsonUtils::jsonToString(error), "application/json");
+        res.setStatus(status);
+        res.setContent(JsonUtils::jsonToString(error), "application/json");
     }
 
-    void sendAckResponse(httplib::Response& res, const std::string& method_name, const Json::Value& rpc_id) {
+    void sendAckResponse(IResponse& res, const std::string& method_name, const Json::Value& rpc_id) {
         Json::Value ack;
         ack["jsonrpc"] = "2.0";
         ack["id"] = rpc_id;
         ack["result"]["ack"] = "Received " + method_name;
-        res.status = 200;
-        res.set_content(JsonUtils::jsonToString(ack), "application/json");
+        res.setStatus(200);
+        res.setContent(JsonUtils::jsonToString(ack), "application/json");
         LOG_DEBUG("Sent HTTP ACK for '" << method_name << "'");
     }
 
@@ -575,7 +631,9 @@ private:
     
     void setupMessageEndpoint() {
         svr.Post("/message", [this](const httplib::Request& req, httplib::Response& res) {
-            mcp_handler.handleRequest(req, res);
+            HttplibRequestAdapter req_adapter(req);
+            HttplibResponseAdapter res_adapter(res);
+            mcp_handler.handleRequest(req_adapter, res_adapter);
         });
     }
 
